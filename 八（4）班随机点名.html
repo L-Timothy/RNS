@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八（4）班课堂随机点名</title>
+    <style>
+        body {
+            font-family: "SimSun", "宋体", serif;
+            background-color: #f7f2e9;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M30,10 Q50,0 70,10 Q90,20 90,50 Q90,80 70,90 Q50,100 30,90 Q10,80 10,50 Q10,20 30,10 Z" fill="none" stroke="%23d4c6b0" stroke-width="0.5" opacity="0.3" /></svg>');
+            background-repeat: repeat;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: #5d4037;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .header {
+            position: relative;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px 0;
+            border-bottom: 2px solid #d4c6b0;
+        }
+        
+        .title {
+            font-size: 34px;
+            font-weight: bold;
+            color: #8d6e63;
+            letter-spacing: 2px;
+            margin: 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            position: relative;
+            padding: 0 40px;
+        }
+        
+        .title::before, .title::after {
+            content: "❖";
+            color: #d4c6b0;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .title::before {
+            left: 8px;
+        }
+        
+        .title::after {
+            right: 8px;
+        }
+        
+        .class-selector {
+            margin-top: 10px;
+            padding: 8px 15px;
+            background-color: #f3e5d8;
+            border: 1px solid #d4c6b0;
+            border-radius: 5px;
+            color: #5d4037;
+            font-family: "SimSun", "宋体", serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .class-selector:hover {
+            background-color: #e6d5c5;
+        }
+        
+        .class-selector:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(141, 110, 99, 0.3);
+        }
+        
+        .result-container {
+            width: 100%;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #d4c6b0;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 15px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .result-container::before, .result-container::after {
+            content: "";
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 1px solid #d4c6b0;
+            z-index: 0;
+        }
+        
+        .result-container::before {
+            top: 5px;
+            left: 5px;
+            border-right: none;
+            border-bottom: none;
+        }
+        
+        .result-container::after {
+            bottom: 5px;
+            right: 5px;
+            border-left: none;
+            border-top: none;
+        }
+        
+        #result {
+            font-size: 60px;
+            font-weight: bold;
+            text-align: center;
+            color: #5d4037;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            font-size: 24px;
+            background-color: #8d6e63;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-family: "SimSun", "宋体", serif;
+            letter-spacing: 2px;
+        }
+        
+        .btn:hover {
+            background-color: #a1887f;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .btn::before {
+            content: "";
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 120%;
+            height: 120%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
+            transform: scale(0);
+            transition: transform 0.5s;
+        }
+        
+        .btn:hover::before {
+            transform: scale(1);
+        }
+        
+        .speed-control {
+            width: 100%;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid #d4c6b0;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .speed-label {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #8d6e63;
+        }
+        
+        .slider-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .slider-icon {
+            font-size: 20px;
+            color: #a1887f;
+        }
+        
+        #speedSlider {
+            flex-grow: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(to right, #d4c6b0, #8d6e63);
+            outline: none;
+            border-radius: 5px;
+        }
+        
+        #speedSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #8d6e63;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        #speedSlider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #8d6e63;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .speed-value {
+            font-size: 16px;
+            width: 50px;
+            text-align: center;
+            color: #5d4037;
+        }
+        
+        .name-list {
+            display: none;
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #d4c6b0;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 5px;
+            column-count: 3;
+            column-gap: 15px;
+        }
+        
+        .name-list.show {
+            display: block;
+        }
+        
+        .name-item {
+            break-inside: avoid-column;
+            padding: 5px 0;
+            font-size: 16px;
+        }
+        
+        #toggle-list, #manage-btn {
+            margin-top: 20px;
+            font-size: 16px;
+            background-color: transparent;
+            color: #8d6e63;
+            border: 1px solid #d4c6b0;
+            padding: 5px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 5px;
+        }
+        
+        #toggle-list:hover, #manage-btn:hover {
+            background-color: #f3e5d8;
+        }
+        
+        .decoration {
+            position: absolute;
+            opacity: 0.08;
+            z-index: -1;
+        }
+        
+        .decoration.top-left {
+            top: 20px;
+            left: 20px;
+            font-size: 120px;
+            transform: rotate(-15deg);
+        }
+        
+        .decoration.bottom-right {
+            bottom: 20px;
+            right: 20px;
+            font-size: 120px;
+            transform: rotate(15deg);
+        }
+        
+        /* 管理界面样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+        }
+        
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: #f7f2e9;
+            padding: 30px;
+            border: 2px solid #d4c6b0;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #d4c6b0;
+        }
+        
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #8d6e63;
+        }
+        
+        .close {
+            color: #8d6e63;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.3s;
+        }
+        
+        .close:hover {
+            color: #5d4037;
+        }
+        
+        .manage-section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #8d6e63;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #8d6e63;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .input-group input {
+            flex: 1;
+            min-width: 150px;
+            padding: 8px 12px;
+            border: 1px solid #d4c6b0;
+            border-radius: 5px;
+            font-family: "SimSun", "宋体", serif;
+            font-size: 16px;
+            background-color: white;
+        }
+        
+        .input-group button {
+            padding: 8px 20px;
+            background-color: #8d6e63;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: "SimSun", "宋体", serif;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .input-group button:hover {
+            background-color: #a1887f;
+        }
+        
+        .student-list-manage {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid #d4c6b0;
+            border-radius: 5px;
+        }
+        
+        .student-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .student-item:hover {
+            background-color: #f3e5d8;
+        }
+        
+        .student-item input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-family: "SimSun", "宋体", serif;
+            font-size: 16px;
+            padding: 0;
+            margin-right: 10px;
+        }
+        
+        .student-item input:disabled {
+            color: #5d4037;
+        }
+        
+        .student-item input:enabled {
+            border-bottom: 1px solid #8d6e63;
+            padding-bottom: 2px;
+        }
+        
+        .student-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .student-actions button {
+            padding: 4px 12px;
+            font-size: 14px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: "SimSun", "宋体", serif;
+        }
+        
+        .edit-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .edit-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .save-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        
+        .save-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        .delete-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .delete-btn:hover {
+            background-color: #da190b;
+        }
+        
+        .cancel-btn {
+            background-color: #9e9e9e;
+            color: white;
+        }
+        
+        .cancel-btn:hover {
+            background-color: #757575;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 10px 20px;
+            background-color: #f3e5d8;
+            border: 1px solid #d4c6b0;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: "SimSun", "宋体", serif;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn:hover {
+            background-color: #e6d5c5;
+        }
+        
+        .tab-btn.active {
+            background-color: #8d6e63;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .title {
+                font-size: 26px;
+                padding: 0 30px;
+            }
+            
+            #result {
+                font-size: 48px;
+            }
+            
+            .btn {
+                font-size: 20px;
+                padding: 10px 24px;
+            }
+            
+            .name-list {
+                column-count: 2;
+            }
+            
+            .title::before {
+                left: 5px;
+            }
+            
+            .title::after {
+                right: 5px;
+            }
+            
+            .modal-content {
+                padding: 20px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .input-group input {
+                min-width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .title {
+                font-size: 22px;
+                padding: 0 20px;
+                letter-spacing: 1px;
+            }
+            
+            #result {
+                font-size: 36px;
+            }
+            
+            .name-list {
+                column-count: 1;
+            }
+            
+            .title::before, .title::after {
+                display: none;
+            }
+            
+            .tab-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="classTitle" class="title">八（4）班课堂随机点名</h1>
+            <select id="classSelector" class="class-selector">
+                <option value="all">全班</option>
+                <option value="A">A班</option>
+                <option value="B">B班</option>
+            </select>
+        </div>
+        
+        <div class="result-container">
+            <div id="result">准备开始</div>
+        </div>
+        
+        <div class="speed-control">
+            <div class="speed-label">速度调节</div>
+            <div class="slider-container">
+                <div class="slider-icon">🐢</div>
+                <input type="range" id="speedSlider" min="1" max="10" value="5">
+                <div class="slider-icon">🐇</div>
+                <div class="speed-value" id="speedValue">中等</div>
+            </div>
+        </div>
+        
+        <button id="randomBtn" class="btn">开始随机</button>
+        
+        <button id="toggle-list">显示名单</button>
+        <button id="manage-btn">管理名单</button>
+        
+        <div id="nameList" class="name-list">
+            <!-- 名单将通过JavaScript填充 -->
+        </div>
+    </div>
+    
+    <div class="decoration top-left">📚</div>
+    <div class="decoration bottom-right">🖋️</div>
+    
+    <!-- 管理界面模态框 -->
+    <div id="manageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">管理学生名单</h2>
+                <span class="close">&times;</span>
+            </div>
+            
+            <div class="tab-buttons">
+                <button class="tab-btn active" data-tab="tabA">A班</button>
+                <button class="tab-btn" data-tab="tabB">B班</button>
+            </div>
+            
+            <div id="tabA" class="tab-content active">
+                <div class="manage-section">
+                    <div class="section-title">添加学生（A班）</div>
+                    <div class="input-group">
+                        <input type="text" id="newStudentA" placeholder="输入学生姓名">
+                        <button onclick="addStudent('A')">添加</button>
+                    </div>
+                </div>
+                
+                <div class="manage-section">
+                    <div class="section-title">学生列表（A班）- 共 <span id="countA">0</span> 人</div>
+                    <div id="studentListA" class="student-list-manage">
+                        <!-- A班学生列表将通过JavaScript填充 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div id="tabB" class="tab-content">
+                <div class="manage-section">
+                    <div class="section-title">添加学生（B班）</div>
+                    <div class="input-group">
+                        <input type="text" id="newStudentB" placeholder="输入学生姓名">
+                        <button onclick="addStudent('B')">添加</button>
+                    </div>
+                </div>
+                
+                <div class="manage-section">
+                    <div class="section-title">学生列表（B班）- 共 <span id="countB">0</span> 人</div>
+                    <div id="studentListB" class="student-list-manage">
+                        <!-- B班学生列表将通过JavaScript填充 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ===================================
+        // 数据存储与初始化
+        // ===================================
+
+        // 学生名单（默认值）
+        let studentsA = [
+            "潘妍霖", "文馨霞", "鍾雨芯", "王奕淳", "邓晨旭", "唐誉珊", "倪子轩", "彭秋歆", "袁梦", "蒋隽", 
+            "杨梓晗", "汤新灵", "谢豪", "李汀", "胡兰允", "刘宇轩", "马悦轩", "梁梦露", "李佳芯", "阎振一", 
+            "罗紫宁", "许语馨", "李野", "尹麒"
+        ];
+        
+        let studentsB = [
+            "扶才钰", "肖宇航", "姚艺龙", "王俊尧", "黄嘉濠", "徐逸帆", "王熠航", "田泽瑞", "陶思齐", 
+            "张瀛龙", "古文昊", "何欣仪", "李潇", "杨云杰", "吴昱齐", "辜辰逍", "陆思韵", "张櫻腾", 
+            "张欣悦", "李亦然", "刘照瑞", "向俊曦", "谢添古"
+        ];
+
+        let studentsAll = [];
+
+        // 从localStorage加载学生名单，如果没有则使用默认值并保存
+        function loadStudents() {
+            const savedStudentsA = localStorage.getItem('studentsA');
+            const savedStudentsB = localStorage.getItem('studentsB');
+            
+            if (savedStudentsA) {
+                studentsA = JSON.parse(savedStudentsA);
+            } else {
+                localStorage.setItem('studentsA', JSON.stringify(studentsA)); // 保存默认值
+            }
+            if (savedStudentsB) {
+                studentsB = JSON.parse(savedStudentsB);
+            } else {
+                localStorage.setItem('studentsB', JSON.stringify(studentsB)); // 保存默认值
+            }
+            
+            studentsAll = [...studentsA, ...studentsB];
+        }
+        
+        // 保存学生名单到localStorage
+        function saveStudents() {
+            localStorage.setItem('studentsA', JSON.stringify(studentsA));
+            localStorage.setItem('studentsB', JSON.stringify(studentsB));
+            studentsAll = [...studentsA, ...studentsB];
+        }
+
+        // 页面加载时从localStorage加载数据
+        loadStudents();
+        
+        // ===================================
+        // 页面主要元素和功能
+        // ===================================
+
+        const classSelector = document.getElementById('classSelector');
+        const classTitle = document.getElementById('classTitle');
+        const nameListElement = document.getElementById('nameList');
+        const randomBtn = document.getElementById('randomBtn');
+        const resultElement = document.getElementById('result');
+        const toggleListBtn = document.getElementById('toggle-list');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValueDisplay = document.getElementById('speedValue');
+        
+        let currentStudents = studentsAll;
+        
+        function updateClassDisplay() {
+            const selectedClass = classSelector.value;
+            if (selectedClass === 'all') {
+                classTitle.textContent = "八（4）班课堂随机点名";
+                currentStudents = studentsAll;
+            } else if (selectedClass === 'A') {
+                classTitle.textContent = "八（4）班（A班）课堂随机点名";
+                currentStudents = studentsA;
+            } else if (selectedClass === 'B') {
+                classTitle.textContent = "八（4）班（B班）课堂随机点名";
+                currentStudents = studentsB;
+            }
+            
+            nameListElement.innerHTML = '';
+            currentStudents.forEach((student, index) => {
+                const nameItem = document.createElement('div');
+                nameItem.className = 'name-item';
+                nameItem.textContent = `${index + 1}. ${student}`;
+                nameListElement.appendChild(nameItem);
+            });
+            
+            if (isRandomizing) {
+                stopRandomizing();
+            }
+            resultElement.textContent = "准备开始";
+        }
+        
+        toggleListBtn.addEventListener('click', () => {
+            nameListElement.classList.toggle('show');
+            toggleListBtn.textContent = nameListElement.classList.contains('show') ? '隐藏名单' : '显示名单';
+        });
+        
+        function updateSpeedDisplay() {
+            const speedValue = parseInt(speedSlider.value);
+            let speedText = ['极慢', '慢速', '中等', '快速', '极快'];
+            let index = Math.ceil(speedValue / 2) - 1;
+            speedValueDisplay.textContent = speedText[index];
+        }
+        
+        updateSpeedDisplay();
+        speedSlider.addEventListener('input', updateSpeedDisplay);
+
+        function getCurrentSpeed() {
+            return 550 - (parseInt(speedSlider.value) * 50);
+        }
+        
+        let isRandomizing = false;
+        let randomInterval;
+        let lastPickedIndex = -1;
+        
+        function stopRandomizing() {
+            isRandomizing = false;
+            clearInterval(randomInterval);
+            randomBtn.textContent = "开始随机";
+        }
+        
+        classSelector.addEventListener('change', updateClassDisplay);
+        
+        randomBtn.addEventListener('click', () => {
+            if (currentStudents.length === 0) {
+                alert("当前名单为空，请先在“管理名单”中添加学生！");
+                return;
+            }
+            if (!isRandomizing) {
+                isRandomizing = true;
+                randomBtn.textContent = "停止随机";
+                const baseSpeed = getCurrentSpeed();
+                randomInterval = setInterval(() => {
+                    let randomIndex;
+                    do {
+                        randomIndex = Math.floor(Math.random() * currentStudents.length);
+                    } while (randomIndex === lastPickedIndex && currentStudents.length > 1);
+                    resultElement.textContent = currentStudents[randomIndex];
+                }, baseSpeed);
+            } else {
+                stopRandomizing();
+                const randomIndex = Math.floor(Math.random() * currentStudents.length);
+                lastPickedIndex = randomIndex;
+                resultElement.style.transform = "scale(1.2)";
+                resultElement.textContent = currentStudents[randomIndex];
+                setTimeout(() => {
+                    resultElement.style.transform = "scale(1)";
+                }, 300);
+            }
+        });
+        
+        speedSlider.addEventListener('change', () => {
+            if (isRandomizing) {
+                clearInterval(randomInterval);
+                const baseSpeed = getCurrentSpeed();
+                randomInterval = setInterval(() => {
+                    let randomIndex;
+                    do {
+                        randomIndex = Math.floor(Math.random() * currentStudents.length);
+                    } while (randomIndex === lastPickedIndex && currentStudents.length > 1);
+                    resultElement.textContent = currentStudents[randomIndex];
+                }, baseSpeed);
+            }
+        });
+
+        // ===================================
+        // 管理界面功能 - 已全部实现
+        // ===================================
+        
+        const manageBtn = document.getElementById('manage-btn');
+        const manageModal = document.getElementById('manageModal');
+        const closeModal = document.querySelector('.close');
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        // 打开管理界面
+        manageBtn.addEventListener('click', () => {
+            manageModal.classList.add('show');
+            // 打开时刷新两个班级的列表
+            renderManageList('A'); 
+            renderManageList('B');
+        });
+        
+        // 关闭管理界面
+        const closeTheModal = () => manageModal.classList.remove('show');
+        closeModal.addEventListener('click', closeTheModal);
+        window.addEventListener('click', (event) => {
+            if (event.target == manageModal) {
+                closeTheModal();
+            }
+        });
+
+        // Tab切换功能
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                button.classList.add('active');
+                document.getElementById(button.dataset.tab).classList.add('active');
+            });
+        });
+
+        // 渲染管理列表的核心函数
+        function renderManageList(classType) {
+            const listContainer = document.getElementById(`studentList${classType}`);
+            const countElement = document.getElementById(`count${classType}`);
+            const studentArray = classType === 'A' ? studentsA : studentsB;
+
+            listContainer.innerHTML = ''; // 清空列表
+            countElement.textContent = studentArray.length; // 更新人数
+
+            studentArray.forEach((name, index) => {
+                const item = document.createElement('div');
+                item.className = 'student-item';
+                item.innerHTML = `
+                    <input type="text" value="${name}" data-index="${index}" disabled>
+                    <div class="student-actions">
+                        <button class="edit-btn" onclick="editStudent('${classType}', ${index}, this)">编辑</button>
+                        <button class="delete-btn" onclick="deleteStudent('${classType}', ${index})">删除</button>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        // 添加学生
+        function addStudent(classType) {
+            const input = document.getElementById(`newStudent${classType}`);
+            const name = input.value.trim();
+            if (!name) {
+                alert('学生姓名不能为空！');
+                return;
+            }
+
+            const studentArray = classType === 'A' ? studentsA : studentsB;
+            studentArray.push(name);
+            
+            saveStudents(); // 保存到localStorage
+            renderManageList(classType); // 刷新管理列表
+            updateClassDisplay(); // 刷新主界面的显示
+            input.value = ''; // 清空输入框
+        }
+
+        // 删除学生
+        function deleteStudent(classType, index) {
+            if (confirm(`确定要删除这位学生吗？`)) {
+                const studentArray = classType === 'A' ? studentsA : studentsB;
+                studentArray.splice(index, 1);
+                
+                saveStudents();
+                renderManageList(classType);
+                updateClassDisplay();
+            }
+        }
+        
+        // 点击“编辑”按钮
+        function editStudent(classType, index, btnElement) {
+            const item = btnElement.closest('.student-item');
+            const input = item.querySelector('input');
+            const actionsDiv = item.querySelector('.student-actions');
+            
+            input.disabled = false;
+            input.focus();
+            
+            // 切换为“保存”和“取消”按钮
+            actionsDiv.innerHTML = `
+                <button class="save-btn" onclick="saveStudent('${classType}', ${index}, this)">保存</button>
+                <button class="cancel-btn" onclick="cancelEdit('${classType}')">取消</button>
+            `;
+        }
+
+        // 点击“保存”按钮
+        function saveStudent(classType, index, btnElement) {
+            const item = btnElement.closest('.student-item');
+            const input = item.querySelector('input');
+            const newName = input.value.trim();
+
+            if (!newName) {
+                alert('学生姓名不能为空！');
+                return;
+            }
+
+            const studentArray = classType === 'A' ? studentsA : studentsB;
+            studentArray[index] = newName;
+
+            saveStudents();
+            renderManageList(classType); // 重新渲染列表以恢复按钮状态
+            updateClassDisplay();
+        }
+
+        // 点击“取消”按钮
+        function cancelEdit(classType) {
+            renderManageList(classType); // 重新渲染列表即可
+        }
+
+        // ===================================
+        // 页面初始化
+        // ===================================
+        updateClassDisplay(); // 页面首次加载时更新显示
+        
+    </script>
+</body>
+</html>
